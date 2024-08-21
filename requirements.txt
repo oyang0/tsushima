@@ -1,0 +1,8 @@
+fbmessenger
+flask
+gunicorn
+openai
+pathlib
+pydub
+requests
+six
