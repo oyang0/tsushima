@@ -22,8 +22,10 @@ def transcribe(audio_file, mid):
     transcription = client.audio.transcriptions.create(model="whisper-1", file=audio_file_, response_format="text")
     audio_file_.close()
 
-    os.remove(f"{mid}.mp4")
-    os.remove(f"{mid}.mp3")
+    if os.path.isfile(f"{mid}.mp4"):
+        os.remove(f"{mid}.mp4")
+    if os.path.isfile(f"{mid}.mp3"):
+        os.remove(f"{mid}.mp3")
 
     return transcription
 
