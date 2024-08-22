@@ -2,6 +2,7 @@ import os
 import psycopg2
 import requests
 
+from commands import process_command
 from flask import Flask, request, send_from_directory
 from fbmessenger import BaseMessenger
 from fbmessenger.elements import Text
@@ -9,20 +10,6 @@ from gtts import gTTS
 from openai import OpenAI
 from pydub import AudioSegment
 from urllib.parse import urlparse
-
-def delete_conversation(sender):
-    result = urlparse(os.environ["DATABASE_URL"])
-    conn = psycopg2.connect(
-        dbname=result.path[1:],
-        user=result.username,
-        password=result.password,
-        host=result.hostname
-    )
-    cur = conn.cursor()
-    cur.execute(f"DELETE FROM threads WHERE sender = %s", (sender,))
-    conn.commit()
-    cur.close()
-    conn.close()
 
 def transcribe(audio_file, mid):
     r = requests.get(audio_file, allow_redirects=True)
@@ -125,8 +112,10 @@ class Messenger(BaseMessenger):
     def message(self, message):
         app.logger.debug(f"Message received: {message}")
 
-        if "text" in message["message"] and message["message"]["text"].lower() == "> delete conversation":
-            delete_conversation(message["sender"]["id"])
+        if "text" in message["message"] and message["message"]["text"][0] == ">":
+            self.send_action("typing_on")
+            process_command(message, client)
+            self.send_action("typing_off")
         elif (
             "attachments" in message["message"] and 
             message["message"]["attachments"][0]["type"] == "audio"
