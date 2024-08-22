@@ -162,7 +162,9 @@ cython_debug/
 #.idea/
 
 assistant_id.txt
+database_url.txt
 fb_page_token.txt
+fb_page_token_development.txt
 fb_verify_token.txt
 openai_api_key.txt
 system_prompt.txt

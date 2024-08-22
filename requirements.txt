@@ -1,5 +1,6 @@
 fbmessenger
 flask
+gtts
 gunicorn
 openai
 pathlib

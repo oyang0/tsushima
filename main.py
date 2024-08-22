@@ -1,13 +1,14 @@
 import os
+import psycopg2
 import requests
-import sqlite3
 
 from flask import Flask, request, send_from_directory
 from fbmessenger import BaseMessenger
 from fbmessenger.elements import Text
+from gtts import gTTS
 from openai import OpenAI
-from pathlib import Path
 from pydub import AudioSegment
+from urllib.parse import urlparse
 
 def transcribe(audio_file, mid):
     r = requests.get(audio_file, allow_redirects=True)
@@ -49,24 +50,31 @@ def generate_corrected_transcript(temperature, audio_file, mid):
 def get_text(message):
     if "attachments" in message and message["attachments"][0]["type"] == "audio":
         text = generate_corrected_transcript(0, message["attachments"][0]["payload"]["url"], message["mid"])
+        app.logger.debug(f"Audio processed: {text}")
     elif "text" in message:
         text = message["text"]
     return text
 
 def get_thread(sender):
-    conn = sqlite3.connect("threads.db")
-    c = conn.cursor()
-
-    c.execute(f"SELECT thread FROM threads WHERE sender = ?", (sender,))
-    record = c.fetchone()
+    result = urlparse(os.environ["DATABASE_URL"])
+    conn = psycopg2.connect(
+        dbname=result.path[1:],
+        user=result.username,
+        password=result.password,
+        host=result.hostname
+    )
+    cur = conn.cursor()
+    cur.execute(f"SELECT thread FROM threads WHERE sender = %s", (sender,))
+    record = cur.fetchone()
 
     if record:
         thread = client.beta.threads.retrieve(record[0])
     else:
         thread = client.beta.threads.create()
-        c.execute("INSERT INTO threads (sender, thread) VALUES (?, ?)", (sender, thread.id))
+        cur.execute("INSERT INTO threads (sender, thread) VALUES (%s, %s)", (sender, thread.id))
         conn.commit()
 
+    cur.close()
     conn.close()
 
     return thread
@@ -86,10 +94,9 @@ def process_message(message):
         message_ = messages.data[0].content[0].text.value
     else:
         message_ = run.status
-    
-    speech_file_path = Path(__file__).parent / f"{message["message"]["mid"]}.mp3"
-    response = client.audio.speech.create(model="tts-1", voice="echo", input=message_)
-    response.stream_to_file(speech_file_path)
+
+    speech = gTTS(text = message_, lang = "ja", slow = False)
+    speech.save(f"{message["message"]["mid"]}.mp3")
 
     url = f"{os.environ.get("CALLBACK_URL")}/audio/{message["message"]["mid"]}.mp3"
     text = Text(text=message_).to_dict()
@@ -108,6 +115,7 @@ class Messenger(BaseMessenger):
             "attachments" in message["message"] and 
             message["message"]["attachments"][0]["type"] == "audio"
         ) or "text" in message["message"]:
+            self.send_action("typing_on")
             actions = process_message(message)
             for action in actions:
                 res = self.send(action, "RESPONSE")
@@ -115,6 +123,7 @@ class Messenger(BaseMessenger):
                     os.remove(f"{message["message"]["mid"]}.mp3")
                 app.logger.debug(f"Message sent: {action}")
                 app.logger.debug(f"Response: {res}")
+            self.send_action("typing_off")
 
 app = Flask(__name__)
 app.debug = True
