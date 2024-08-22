@@ -1,5 +1,7 @@
 # Tsushima
-Meta App for Japanese Dialogue Education in Messenger
+Meta App for Japanese Education through Dialogue in Messenger
+
+https://www.facebook.com/profile.php?id=61564148264808
 
 ## How to set up
 
