@@ -12,8 +12,6 @@ CREATE TABLE IF NOT EXISTS threads (
 );
 """)
 
-cur.execute("DROP TABLE IF EXISTS problems")
-
 cur.execute("""
 CREATE TABLE IF NOT EXISTS problems (
 	id SERIAL PRIMARY KEY,
