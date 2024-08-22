@@ -10,6 +10,20 @@ from openai import OpenAI
 from pydub import AudioSegment
 from urllib.parse import urlparse
 
+def delete_conversation(sender):
+    result = urlparse(os.environ["DATABASE_URL"])
+    conn = psycopg2.connect(
+        dbname=result.path[1:],
+        user=result.username,
+        password=result.password,
+        host=result.hostname
+    )
+    cur = conn.cursor()
+    cur.execute(f"DELETE FROM threads WHERE sender = %s", (sender,))
+    conn.commit()
+    cur.close()
+    conn.close()
+
 def transcribe(audio_file, mid):
     r = requests.get(audio_file, allow_redirects=True)
     open(f"{mid}.mp4", "wb").write(r.content)
@@ -111,7 +125,9 @@ class Messenger(BaseMessenger):
     def message(self, message):
         app.logger.debug(f"Message received: {message}")
 
-        if (
+        if "text" in message["message"] and message["message"]["text"].lower() == "> delete conversation":
+            delete_conversation(message["sender"]["id"])
+        elif (
             "attachments" in message["message"] and 
             message["message"]["attachments"][0]["type"] == "audio"
         ) or "text" in message["message"]:
