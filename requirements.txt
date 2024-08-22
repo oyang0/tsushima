@@ -4,6 +4,7 @@ gtts
 gunicorn
 openai
 pathlib
+psycopg2
 pydub
 requests
 six
