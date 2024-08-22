@@ -20,6 +20,14 @@ CREATE TABLE IF NOT EXISTS problems (
 );
 """)
 
+cur.execute("""
+CREATE TABLE IF NOT EXISTS speeds (
+	id SERIAL PRIMARY KEY,
+	sender TEXT NOT NULL UNIQUE,
+	slow BOOLEAN NOT NULL
+);
+""")
+
 conn.commit()
 cur.close()
 conn.close()

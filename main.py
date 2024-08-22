@@ -2,7 +2,7 @@ import os
 import psycopg2
 import requests
 
-from commands import process_command
+from commands import process_command, set_voice_speed
 from flask import Flask, request, send_from_directory
 from fbmessenger import BaseMessenger
 from fbmessenger.elements import Text
@@ -82,6 +82,29 @@ def get_thread(sender):
 
     return thread
 
+def get_voice_speed(sender):
+    result = urlparse(os.environ["DATABASE_URL"])
+    conn = psycopg2.connect(
+        dbname=result.path[1:],
+        user=result.username,
+        password=result.password,
+        host=result.hostname
+    )
+    cur = conn.cursor()
+    cur.execute(f"SELECT slow FROM speeds WHERE sender = %s", (sender,))
+    record = cur.fetchone()
+
+    if record:
+        slow = record[0]
+    else:
+        slow = False
+        set_voice_speed(sender, "normal", app)
+
+    cur.close()
+    conn.close()
+
+    return slow
+
 def process_message(message):
     text = get_text(message["message"])
 
@@ -98,7 +121,7 @@ def process_message(message):
     else:
         message_ = run.status
 
-    speech = gTTS(text = message_, lang = "ja", slow = False)
+    speech = gTTS(text = message_, lang = "ja", slow = get_voice_speed(message["sender"]["id"]))
     speech.save(f"{message["message"]["mid"]}.mp3")
 
     url = f"{os.environ.get("CALLBACK_URL")}/audio/{message["message"]["mid"]}.mp3"
