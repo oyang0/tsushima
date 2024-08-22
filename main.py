@@ -70,10 +70,12 @@ def get_thread(sender):
 
     if record:
         thread = client.beta.threads.retrieve(record[0])
+        app.logger.debug(f"Thread retrieved: {record[0]}")
     else:
         thread = client.beta.threads.create()
         cur.execute("INSERT INTO threads (sender, thread) VALUES (%s, %s)", (sender, thread.id))
         conn.commit()
+        app.logger.debug(f"Thread created: {thread.id}")
 
     cur.close()
     conn.close()
@@ -114,7 +116,7 @@ class Messenger(BaseMessenger):
 
         if "text" in message["message"] and message["message"]["text"][0] == ">":
             self.send_action("typing_on")
-            process_command(message, client)
+            process_command(message, app, client)
             self.send_action("typing_off")
         elif (
             "attachments" in message["message"] and 
