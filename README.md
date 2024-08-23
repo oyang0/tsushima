@@ -63,6 +63,7 @@ export CALLBACK_URL=
 export DATABASE_URL=
 export FB_PAGE_TOKEN=
 export FB_VERIFY_TOKEN=
+export SCHEMA=
 export SYSTEM_PROMPT=あなたは役立つアシスタントです。あなたの仕事は、書き起こされたテキストのスペルの不一致を修正することです。ピリオド、カンマ、大文字の使用など、必要な句読点のみを追加し、提供された文脈のみを使用してください。
 ```
 
@@ -72,6 +73,7 @@ set CALLBACK_URL=
 set DATABASE_URL=
 set FB_PAGE_TOKEN=
 set FB_VERIFY_TOKEN=
+set SCHEMA=
 set SYSTEM_PROMPT=あなたは役立つアシスタントです。あなたの仕事は、書き起こされたテキストのスペルの不一致を修正することです。ピリオド、カンマ、大文字の使用など、必要な句読点のみを追加し、提供された文脈のみを使用してください。
 ```
 
