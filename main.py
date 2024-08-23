@@ -67,6 +67,7 @@ def create_thread(sender, conn, cur):
         """, (sender, thread.id))
     conn.commit()
     app.logger.debug(f"Thread created: {thread.id}")
+    return thread
 
 def get_thread(sender):
     result = urlparse(os.environ["DATABASE_URL"])
@@ -85,9 +86,9 @@ def get_thread(sender):
             thread = client.beta.threads.retrieve(record[0])
             app.logger.debug(f"Thread retrieved: {record[0]}")
         except NotFoundError:
-            create_thread(sender, conn, cur)
+            thread = create_thread(sender, conn, cur)
     else:
-        create_thread(sender, conn, cur)
+        thread = create_thread(sender, conn, cur)
 
     cur.close()
     conn.close()
