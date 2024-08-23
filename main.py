@@ -65,7 +65,7 @@ def get_thread(sender):
         host=result.hostname
     )
     cur = conn.cursor()
-    cur.execute(f"SELECT thread FROM threads WHERE sender = %s", (sender,))
+    cur.execute(f"SELECT thread FROM {os.environ["SCHEMA"]}.threads WHERE sender = %s", (sender,))
     record = cur.fetchone()
 
     if record:
@@ -73,7 +73,11 @@ def get_thread(sender):
         app.logger.debug(f"Thread retrieved: {record[0]}")
     else:
         thread = client.beta.threads.create()
-        cur.execute("INSERT INTO threads (sender, thread) VALUES (%s, %s)", (sender, thread.id))
+        cur.execute(
+            f"""
+            INSERT INTO {os.environ["SCHEMA"]}.threads (sender, thread) 
+            VALUES (%s, %s)
+            """, (sender, thread.id))
         conn.commit()
         app.logger.debug(f"Thread created: {thread.id}")
 
@@ -91,7 +95,7 @@ def get_voice_speed(sender):
         host=result.hostname
     )
     cur = conn.cursor()
-    cur.execute(f"SELECT slow FROM speeds WHERE sender = %s", (sender,))
+    cur.execute(f"SELECT slow FROM {os.environ["SCHEMA"]}.speeds WHERE sender = %s", (sender,))
     record = cur.fetchone()
 
     if record:

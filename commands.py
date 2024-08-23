@@ -13,14 +13,14 @@ def delete_conversation(sender, app, client):
     )
     cur = conn.cursor()
 
-    cur.execute(f"SELECT thread FROM threads WHERE sender = %s", (sender,))
+    cur.execute(f"SELECT thread FROM {os.environ["SCHEMA"]}.threads WHERE sender = %s", (sender,))
     record = cur.fetchone()
 
     if record:
         client.beta.threads.delete(record[0])
         app.logger.debug(f"{sender} deleted from OpenAI thread: {record[0]}")
 
-        cur.execute(f"DELETE FROM threads WHERE sender = %s", (sender,))
+        cur.execute(f"DELETE FROM {os.environ["SCHEMA"]}.threads WHERE sender = %s", (sender,))
         conn.commit()
         app.logger.debug(f"{sender} deleted thread: {record[0]}")
 
@@ -39,7 +39,7 @@ def report_technical_problem(sender, text, app):
             host=result.hostname
         )
         cur = conn.cursor()
-        cur.execute("INSERT INTO problems (sender, message) VALUES (%s, %s)", (sender, message))
+        cur.execute(f"INSERT INTO {os.environ["SCHEMA"]}.problems (sender, message) VALUES (%s, %s)", (sender, message))
         app.logger.debug(f"{sender} reported technical problem: {message}")
         conn.commit()
         cur.close()
@@ -58,8 +58,8 @@ def set_voice_speed(sender, text, app):
         )
         cur = conn.cursor()
         cur.execute(
-            """
-            INSERT INTO speeds (sender, slow)
+            f"""
+            INSERT INTO {os.environ["SCHEMA"]}.speeds (sender, slow)
             VALUES (%s, %s)
             ON CONFLICT (sender)
             DO UPDATE SET slow = EXCLUDED.slow;
