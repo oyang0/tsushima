@@ -55,7 +55,19 @@ ngrok http 5000
 
 5. **Get the ngrok URL**: ngrok will display a forwarding URL that looks something like `https://f4f6-2001-56a-78a8-a100-8d58-23db-6998-9fe3.ngrok-free.app`. This URL routes to the local Flask app.
 
-6. **Set up Environment Variables**: It is necessary to set all the environment variables that the Flask app uses (like `FB_PAGE_TOKEN`, `SYSTEM_PROMPT`, etc.). The callback URL is the ngrok URL. The Verify Token can be any string. In a Unix-based system, use the `export` command. In a Windows command prompt, use the `set` command.
+6. **Create a Database**: A Postgre database is required by the Flask app. Create one by typing the following command.
+
+```
+createdb -h localhost -p 5432 -U 
+```
+
+7. **Create the Tables**: Create the tables required by the Flask app by typing the following command.
+
+```
+python setup.py
+```
+
+8. **Set up Environment Variables**: It is necessary to set all the environment variables that the Flask app uses (like `FB_PAGE_TOKEN`, `SYSTEM_PROMPT`, etc.). The callback URL is the ngrok URL. The Verify Token can be any string. In a Unix-based system, use the `export` command. In a Windows command prompt, use the `set` command.
 
 ```
 export ASSISTANT_ID=
@@ -63,7 +75,7 @@ export CALLBACK_URL=
 export DATABASE_URL=
 export FB_PAGE_TOKEN=
 export FB_VERIFY_TOKEN=
-export SCHEMA=
+export SCHEMA=tsushima_staging
 export SYSTEM_PROMPT=あなたは役立つアシスタントです。あなたの仕事は、書き起こされたテキストのスペルの不一致を修正することです。ピリオド、カンマ、大文字の使用など、必要な句読点のみを追加し、提供された文脈のみを使用してください。
 ```
 
@@ -73,20 +85,8 @@ set CALLBACK_URL=
 set DATABASE_URL=
 set FB_PAGE_TOKEN=
 set FB_VERIFY_TOKEN=
-set SCHEMA=
+set SCHEMA=tsushima_staging
 set SYSTEM_PROMPT=あなたは役立つアシスタントです。あなたの仕事は、書き起こされたテキストのスペルの不一致を修正することです。ピリオド、カンマ、大文字の使用など、必要な句読点のみを追加し、提供された文脈のみを使用してください。
-```
-
-7. **Create a Database**: A Postgre database is required by the Flask app. Create one by typing the following command.
-
-```
-createdb -h localhost -p 5432 -U 
-```
-
-8. **Create the Tables**: Create the tables required by the Flask app by typing the following command.
-
-```
-python setup.py
 ```
 
 9. **Run the Flask app**: Open a terminal, navigate to the directory of the Flask app, and run it by running the following command.
@@ -122,7 +122,7 @@ heroku buildpacks:add --index 1 https://github.com/jonathanong/heroku-buildpack-
 7. **Set up Environment Variables**: Set environment variables on Heroku using the command `heroku config:set VARNAME=value`. Replace `VARNAME` and `value` with the names and values of the necessary variables. It is necessary to set all the environment variables that the Flask app uses (like `FB_PAGE_TOKEN`, `SYSTEM_PROMPT`, etc.). The Verify Token can be any string.
 
 ```
-heroku config:set ASSISTANT_ID= CALLBACK_URL= FB_PAGE_TOKEN= FB_VERIFY_TOKEN= OPENAI_API_KEY= SYSTEM_PROMPT="あなたは役立つアシスタントです。あなたの仕事は、書き起こされたテキストのスペルの不一致を修正することです。ピリオド、カンマ、大文字の使用など、必要な句読点のみを追加し、提供された文脈のみを使用してください。"
+heroku config:set ASSISTANT_ID= CALLBACK_URL= FB_PAGE_TOKEN= FB_VERIFY_TOKEN= OPENAI_API_KEY= SCHEMA= SYSTEM_PROMPT="あなたは役立つアシスタントです。あなたの仕事は、書き起こされたテキストのスペルの不一致を修正することです。ピリオド、カンマ、大文字の使用など、必要な句読点のみを追加し、提供された文脈のみを使用してください。"
 ```
 
 8. **Set up Webhook:** In the Facebook App's dashboard, in the Messenger settings, under "Webhooks", click "Add Callback URL". Enter the callback URL followed by `/webhook` (e.g., `https://app-name.herokuapp.com/webhook`). Enter the Verify Token previously set as an environment variable. In the "Subscription Fields", select `messages` and `messaging_postbacks`, then click "Verify and Save".

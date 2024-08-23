@@ -7,7 +7,7 @@ from flask import Flask, request, send_from_directory
 from fbmessenger import BaseMessenger
 from fbmessenger.elements import Text
 from gtts import gTTS
-from openai import OpenAI
+from openai import OpenAI, NotFoundError
 from pydub import AudioSegment
 from urllib.parse import urlparse
 
@@ -56,6 +56,18 @@ def get_text(message):
         text = message["text"]
     return text
 
+def create_thread(sender, conn, cur):
+    thread = client.beta.threads.create()
+    cur.execute(
+        f"""
+        INSERT INTO {os.environ["SCHEMA"]}.threads (sender, thread) 
+        VALUES (%s, %s)
+        ON CONFLICT (sender)
+        DO UPDATE SET thread = EXCLUDED.thread;
+        """, (sender, thread.id))
+    conn.commit()
+    app.logger.debug(f"Thread created: {thread.id}")
+
 def get_thread(sender):
     result = urlparse(os.environ["DATABASE_URL"])
     conn = psycopg2.connect(
@@ -69,17 +81,13 @@ def get_thread(sender):
     record = cur.fetchone()
 
     if record:
-        thread = client.beta.threads.retrieve(record[0])
-        app.logger.debug(f"Thread retrieved: {record[0]}")
+        try:
+            thread = client.beta.threads.retrieve(record[0])
+            app.logger.debug(f"Thread retrieved: {record[0]}")
+        except NotFoundError:
+            create_thread(sender, conn, cur)
     else:
-        thread = client.beta.threads.create()
-        cur.execute(
-            f"""
-            INSERT INTO {os.environ["SCHEMA"]}.threads (sender, thread) 
-            VALUES (%s, %s)
-            """, (sender, thread.id))
-        conn.commit()
-        app.logger.debug(f"Thread created: {thread.id}")
+        create_thread(sender, conn, cur)
 
     cur.close()
     conn.close()
