@@ -4,6 +4,10 @@ import psycopg2
 conn = psycopg2.connect(os.environ['DATABASE_URL'])
 cur = conn.cursor()
 
+cur.execute(f"DROP TABLE IF EXISTS threads;")
+cur.execute(f"DROP TABLE IF EXISTS problems;")
+cur.execute(f"DROP TABLE IF EXISTS speeds;")
+
 for stage in ("tsushima_staging", "tsushima_production"):
 	cur.execute(f"CREATE SCHEMA IF NOT EXISTS {stage};")
 
