@@ -41,7 +41,7 @@ class Messenger(BaseMessenger):
                            commands.is_command(message) else 
                            process_message(message))
             except Exception as exception:
-                actions = [Text(text=f"{exception}")]
+                actions = [Text(text=f"{exception}").to_dict()]
 
             for action in actions:
                 res = self.send(action, "RESPONSE")
