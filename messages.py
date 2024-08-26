@@ -56,7 +56,7 @@ def get_thread(sender, cur, app, client):
 
     if record:
         try:
-            thread = retries.thread_retrieval_with_backoff(record[0])
+            thread = retries.thread_retrieval_with_backoff(client, record[0])
             app.logger.debug(f"Thread retrieved: {record[0]}")
         except NotFoundError:
             thread = set_thread(sender, cur, app, client)
