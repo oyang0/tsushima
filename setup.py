@@ -1,35 +1,38 @@
 import os
 import psycopg2
 
-conn = psycopg2.connect(os.environ['DATABASE_URL'])
+conn = psycopg2.connect(os.environ["DATABASE_URL"])
 cur = conn.cursor()
 
-for stage in ("tsushima_staging", "tsushima_production"):
-	cur.execute(f"CREATE SCHEMA IF NOT EXISTS {stage};")
+cur.execute(f"CREATE SCHEMA IF NOT EXISTS {os.environ["SCHEMA"]}")
 
-	cur.execute(f"""
-	CREATE TABLE IF NOT EXISTS {stage}.threads (
-		id SERIAL PRIMARY KEY,
-		sender TEXT NOT NULL UNIQUE,
-		thread TEXT NOT NULL
-	);
-	""")
+cur.execute(f"DROP TABLE IF EXISTS {os.environ["SCHEMA"]}.threads")
+cur.execute(f"DROP TABLE IF EXISTS {os.environ["SCHEMA"]}.speeds")
+cur.execute(f"DROP TABLE IF EXISTS {os.environ["SCHEMA"]}.problems")
 
-	cur.execute(f"""
-	CREATE TABLE IF NOT EXISTS {stage}.problems (
-		id SERIAL PRIMARY KEY,
-		sender TEXT NOT NULL,
-		message TEXT NOT NULL
-	);
-	""")
+cur.execute(f"""
+CREATE TABLE IF NOT EXISTS {os.environ["SCHEMA"]}.threads (
+	id SERIAL PRIMARY KEY,
+	sender TEXT NOT NULL UNIQUE,
+	thread TEXT NOT NULL
+)
+""")
 
-	cur.execute(f"""
-	CREATE TABLE IF NOT EXISTS {stage}.speeds (
-		id SERIAL PRIMARY KEY,
-		sender TEXT NOT NULL UNIQUE,
-		slow BOOLEAN NOT NULL
-	);
-	""")
+cur.execute(f"""
+CREATE TABLE IF NOT EXISTS {os.environ["SCHEMA"]}.speeds (
+	id SERIAL PRIMARY KEY,
+	sender TEXT NOT NULL UNIQUE,
+	slow BOOLEAN NOT NULL
+)
+""")
+
+cur.execute(f"""
+CREATE TABLE IF NOT EXISTS {os.environ["SCHEMA"]}.problems (
+	id SERIAL PRIMARY KEY,
+	sender TEXT NOT NULL,
+	problem TEXT NOT NULL
+)
+""")
 
 conn.commit()
 cur.close()
