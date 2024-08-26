@@ -27,8 +27,8 @@ def process_message(message):
 class Messenger(BaseMessenger):
     def __init__(self, page_access_token):
         self.page_access_token = page_access_token
-        self.init_bot()
         super(Messenger, self).__init__(self.page_access_token)
+        self.init_bot()
 
     def message(self, message):
         app.logger.debug(f"Message received: {message}")
