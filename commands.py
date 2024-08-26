@@ -20,7 +20,7 @@ def is_command(message):
 
 def set_voice_speed(message, cur, client):
     voice_speeds = {voice_speed: message["message"]["text"].find(voice_speed) for voice_speed in ("normal", "slow")}
-    indices = {index: voice_speed for voice_speed, index in voice_speeds if index != -1}
+    indices = {index: voice_speed for voice_speed, index in voice_speeds.items() if index != -1}
 
     if indices:
         voice_speed = indices[min(indices)]
