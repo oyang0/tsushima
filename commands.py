@@ -15,9 +15,8 @@ def set_commands():
     return response
 
 def is_command(message):
-    return "commands" in message["message"]
-    # return ("text" in message["message"] and 
-    #         any([command["name"] in message["message"]["text"] for command in commands]))
+    return ("text" in message["message"] and 
+            any([command["name"] in message["message"]["text"] for command in commands]))
 
 def set_voice_speed(message, cur, client):
     voice_speeds = {voice_speed: message["message"]["text"].find(voice_speed) for voice_speed in ("normal", "slow")}
@@ -79,12 +78,15 @@ def process_command(message, client):
     retries.close_cursor_and_connection_with_backoff(cur, conn)
     return responses
 
-commands = [{"name": "speed",
-             "description": "Set voice speed to \"normal\" or \"slow\"",
-             "function": set_voice_speed},
-            {"name": "delete",
-             "description": "Delete this entire conversation",
-             "function": delete_conversation},
-            {"name": "report",
-             "description": "Briefly explain what happened and how to repoduce the problem",
-             "function": report_technical_problem}]
+commands = []
+
+
+# # {"name": "speed",
+#              "description": "Set voice speed to \"normal\" or \"slow\"",
+#              "function": set_voice_speed},
+#             {"name": "delete",
+#              "description": "Delete this entire conversation",
+#              "function": delete_conversation},
+#             {"name": "report",
+#              "description": "Briefly explain what happened and how to repoduce the problem",
+#              "function": report_technical_problem}
