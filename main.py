@@ -33,7 +33,7 @@ class Messenger(BaseMessenger):
         app.logger.debug(f"Message received: {message}")
         self.send_action("mark_seen")
 
-        if messages.is_audio(message) or "text" in message["message"]:
+        if messages.is_audio(message["message"]) or "text" in message["message"]:
             self.send_action("typing_on")
 
             try:
