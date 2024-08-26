@@ -37,12 +37,12 @@ class Messenger(BaseMessenger):
         if messages.is_audio(message["message"]) or "text" in message["message"]:
             self.send_action("typing_on")
 
-            # try:
-            actions = (commands.process_command(message, client) if 
-                        commands.is_command(message) else 
-                        process_message(message))
-            # except Exception as exception:
-            #     actions = [Text(text=f"{exception}").to_dict()]
+            try:
+                actions = (commands.process_command(message, client) if 
+                            commands.is_command(message) else 
+                            process_message(message))
+            except Exception as exception:
+                actions = [Text(text=f"{exception}").to_dict()]
 
             for action in actions:
                 res = self.send(action, "RESPONSE")
