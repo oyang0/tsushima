@@ -51,6 +51,7 @@ class Messenger(BaseMessenger):
             self.send_action("typing_off")
         
     def init_bot(self):
+        app.logger.debug("Initialization started")
         self.add_whitelisted_domains("https://facebook.com/")
         res = commands.set_commands()
         app.logger.debug("Response: {}".format(res))
