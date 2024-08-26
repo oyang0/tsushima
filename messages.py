@@ -51,7 +51,12 @@ def set_thread(sender, cur, app, client):
     return thread
 
 def get_thread(sender, cur, app, client):
-    cur.execute(f"SELECT thread FROM {os.environ["SCHEMA"]}.threads WHERE sender = %s", (sender,))
+    retries.execution_with_backoff(
+        cur, f"""
+        SELECT thread
+        FROM {os.environ["SCHEMA"]}.threads
+        WHERE sender = %s
+        """, (sender,))
     record = cur.fetchone()
 
     if record:
@@ -65,9 +70,44 @@ def get_thread(sender, cur, app, client):
 
     return thread
 
-def get_message(run, thread_id, client):
+def set_level(sender, cur):
+    level = "A1"
+    retries.execution_with_backoff(
+        cur, f"""
+        INSERT INTO {os.environ["SCHEMA"]}.levels (sender, level) 
+        VALUES (%s, %s)
+        ON CONFLICT (sender)
+        DO UPDATE SET level = EXCLUDED.level;
+        """, (sender, level))
+    return level
+
+def get_level(sender, cur):
+    retries.execution_with_backoff(
+        cur, f"""
+        SELECT level
+        FROM {os.environ["SCHEMA"]}.levels
+        WHERE sender = %s
+        """, (sender,))
+    record = cur.fetchone()
+    level = record[0] if record else set_level(sender, cur)
+    return level
+
+def get_assistant(level):
+    levels = {"A1": os.environ["A1_ASSISTANT_ID"], "A2": os.environ["A2_ASSISTANT_ID"],
+              "B1": os.environ["B1_ASSISTANT_ID"], "B2": os.environ["B2_ASSISTANT_ID"],
+              "C1": os.environ["C1_ASSISTANT_ID"], "C2": os.environ["C2_ASSISTANT_ID"]}
+    
+    if level in levels:
+        assistant = levels[level]
+    else:
+        raise Exception("assistant not found")
+        
+    return assistant
+
+def get_message(run, thread_id, app, client):
     if run.status == "completed": 
         messages = retries.message_listing_with_backoff(client, thread_id)
+        app.logger.debug(f"Messages listed: {thread_id}")
         value = messages.data[0].content[0].text.value
     else:
         raise Exception(run.status)
@@ -85,11 +125,16 @@ def set_voice_speed(sender, cur):
     return slow
 
 def get_voice_speed(sender, cur):
-    cur.execute(f"SELECT slow FROM {os.environ["SCHEMA"]}.speeds WHERE sender = %s", (sender,))
+    retries.execution_with_backoff(
+        cur, f"""
+        SELECT slow
+        FROM {os.environ["SCHEMA"]}.speeds
+        WHERE sender = %s
+        """, (sender,))
     record = cur.fetchone()
     slow = record[0] if record else set_voice_speed(sender, cur)
     return slow
 
-def set_tts(text, sender, mid, cur):
-    tts = gTTS(text = text, lang = "ja", slow = get_voice_speed(sender, cur))
-    tts.save(f"{mid}.mp3")
+def set_tts(text, message, cur):
+    tts = gTTS(text = text, lang = "ja", slow = get_voice_speed(message["sender"]["id"], cur))
+    tts.save(f"{message["message"]["mid"]}.mp3")

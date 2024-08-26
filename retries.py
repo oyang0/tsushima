@@ -86,8 +86,8 @@ def generate_corrected_transcript(client, temperature, system_prompt, transcribe
     return response.choices[0].message.content
 
 @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
-def creation_and_polling_with_backoff(client, thread_id):
-    run = client.beta.threads.runs.create_and_poll(thread_id=thread_id, assistant_id=os.environ["ASSISTANT_ID"])
+def creation_and_polling_with_backoff(client, thread_id, assistant_id):
+    run = client.beta.threads.runs.create_and_poll(thread_id=thread_id, assistant_id=assistant_id)
 
     while run.status == "in_progress":
         pass

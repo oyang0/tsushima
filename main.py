@@ -14,9 +14,11 @@ def process_message(message):
     text = messages.get_text(message["message"], app, client, system_prompt)
     thread = messages.get_thread(message["sender"]["id"], cur, app, client)
     retries.message_creation_with_backoff(client, thread.id, text)
-    run = retries.creation_and_polling_with_backoff(client, thread.id)
-    value = messages.get_message(run, thread.id, client)
-    messages.set_tts(value, message["sender"]["id"], message["message"]["mid"], cur)
+    level = messages.get_level(message["sender"]["id"], cur)
+    assistant = messages.get_assistant(level)
+    run = retries.creation_and_polling_with_backoff(client, thread.id, assistant)
+    value = messages.get_message(run, thread.id, app, client)
+    messages.set_tts(value, message, cur)
     url = f"{os.environ.get("CALLBACK_URL").rstrip("/")}/audio/{message["message"]["mid"]}.mp3"
     audio = Audio(url=url, is_reusable=True)
     text = Text(text=value)
@@ -37,9 +39,10 @@ class Messenger(BaseMessenger):
             self.send_action("typing_on")
 
             try:
-                actions = (commands.process_command(message, client) if 
-                            commands.is_command(message) else 
-                            process_message(message))
+                if commands.is_command(message["message"]):
+                    actions = commands.process_command(message, app, client)
+                else:
+                    actions = process_message(message)
             except Exception as exception:
                 actions = [Text(text=f"{exception}").to_dict()]
 
