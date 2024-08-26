@@ -15,8 +15,9 @@ def set_commands():
     return response
 
 def is_command(message):
-    return ("text" in message["message"] and 
-            any([command["name"] in message["message"]["text"] for command in commands]))
+    return "commands" in message["message"]
+    # return ("text" in message["message"] and 
+    #         any([command["name"] in message["message"]["text"] for command in commands]))
 
 def set_voice_speed(message, cur, client):
     voice_speeds = {voice_speed: message["message"]["text"].find(voice_speed) for voice_speed in ("normal", "slow")}
