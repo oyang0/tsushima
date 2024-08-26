@@ -22,7 +22,7 @@ def process_message(message):
     text = Text(text=value)
     retries.commit_with_backoff(conn)
     retries.close_cursor_and_connection_with_backoff(cur, conn)
-    return (audio.to_dict(), text.to_dict())
+    return (text.to_dict()) # audio.to_dict()
 
 class Messenger(BaseMessenger):
     def __init__(self, page_access_token):
