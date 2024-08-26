@@ -12,7 +12,7 @@ from openai import OpenAI
 def process_message(message):
     conn, cur = retries.get_connection_and_cursor_with_backoff()
     text = messages.get_text(message["message"], app, client, system_prompt)
-    thread = messages.get_thread(message["sender"]["id"], cur, app)
+    thread = messages.get_thread(message["sender"]["id"], cur, app, client)
     retries.message_creation_with_backoff(client, thread.id, text)
     run = retries.creation_and_polling_with_backoff(client, thread.id)
     value = messages.get_message(run, thread.id, client)

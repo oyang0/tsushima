@@ -38,8 +38,8 @@ def get_text(message, app, client, system_prompt):
         raise Exception("message is neither audio nor text")
     return text
 
-def set_thread(sender, cur, app):
-    thread = retries.thread_creation_with_backoff()
+def set_thread(sender, cur, app, client):
+    thread = retries.thread_creation_with_backoff(client)
     app.logger.debug(f"Thread created: {thread.id}")
     retries.execution_with_backoff(
         cur, f"""
@@ -50,7 +50,7 @@ def set_thread(sender, cur, app):
         """, (sender, thread.id))
     return thread
 
-def get_thread(sender, cur, app):
+def get_thread(sender, cur, app, client):
     cur.execute(f"SELECT thread FROM {os.environ["SCHEMA"]}.threads WHERE sender = %s", (sender,))
     record = cur.fetchone()
 
@@ -59,9 +59,9 @@ def get_thread(sender, cur, app):
             thread = retries.thread_retrieval_with_backoff(record[0])
             app.logger.debug(f"Thread retrieved: {record[0]}")
         except NotFoundError:
-            thread = set_thread(sender, cur, app)
+            thread = set_thread(sender, cur, app, client)
     else:
-        thread = set_thread(sender, cur, app)
+        thread = set_thread(sender, cur, app, client)
 
     return thread
 
