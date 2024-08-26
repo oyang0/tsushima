@@ -64,6 +64,8 @@ system_prompt = os.environ["SYSTEM_PROMPT"]
 
 @app.route("/webhook", methods=["GET", "POST"])
 def webhook():
+    app.logger.debug("Raw payload:", request.get_json())
+
     if request.method == "GET":
         if request.args.get("hub.verify_token") == os.environ.get("FB_VERIFY_TOKEN"):
             if request.args.get("init") and request.args.get("init") == "true":

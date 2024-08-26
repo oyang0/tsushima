@@ -78,15 +78,12 @@ def process_command(message, client):
     retries.close_cursor_and_connection_with_backoff(cur, conn)
     return responses
 
-commands = []
-
-
-# # {"name": "speed",
-#              "description": "Set voice speed to \"normal\" or \"slow\"",
-#              "function": set_voice_speed},
-#             {"name": "delete",
-#              "description": "Delete this entire conversation",
-#              "function": delete_conversation},
-#             {"name": "report",
-#              "description": "Briefly explain what happened and how to repoduce the problem",
-#              "function": report_technical_problem}
+commands = [{"name": "speed",
+             "description": "Set voice speed to \"normal\" or \"slow\"",
+             "function": set_voice_speed},
+            {"name": "delete",
+             "description": "Delete this entire conversation",
+             "function": delete_conversation},
+            {"name": "report",
+             "description": "Briefly explain what happened and how to repoduce the problem",
+             "function": report_technical_problem}]
