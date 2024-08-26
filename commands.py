@@ -11,7 +11,7 @@ def set_commands():
     json = {"commands": [{"locale": "default", "commands": 
                          [{key: command[key] for key in ("name", "description")} for command in commands]}]}
     headers = {"Content-Type": "application/json"}
-    response = requests.post(url, json=json, headers=headers)
+    response = requests.post(url, json={}, headers=headers)
     return response
 
 def is_command(message):
