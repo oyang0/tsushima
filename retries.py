@@ -43,7 +43,7 @@ def execution_with_backoff(cur, query, vars = None):
 
 @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
 def transcription_creation_with_backoff(client, audio_file):
-    transcription = client.audio.transcriptions.create(model="whisper-1", file=audio_file, response_format="text")
+    transcription = client.audio.transcriptions.create(model="whisper-1", file=audio_file, response_format="text", prompt="中村由美, 中村, 由美")
     return transcription
 
 @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
