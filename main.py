@@ -12,12 +12,14 @@ from openai import OpenAI
 
 def process_message(message):
     conn, cur = retries.get_connection_and_cursor_with_backoff()
-    text = messages.get_text(message["message"], app, client)
+    level = messages.get_level(message["sender"]["id"], cur)
+    text = messages.get_text(message["message"], level, app, client)
     thread = messages.get_thread(message["sender"]["id"], cur, app, client)
     retries.message_creation_with_backoff(client, thread.id, text)
-    level = messages.get_level(message["sender"]["id"], cur)
-    assistant = messages.get_assistant(level)
-    run = retries.creation_and_polling_with_backoff(client, thread.id, assistant)
+    app.logger.debug(f"Message created: {thread.id}")
+    chat_assistant = messages.get_chat_assistant(level)
+    run = retries.creation_and_polling_with_backoff(client, thread.id, chat_assistant)
+    app.logger.debug(f"Message polled: {thread.id}")
     value = messages.get_message(run, thread.id, app, client)
     messages.set_tts(value, message, cur)
     url = f"{os.environ.get("CALLBACK_URL").rstrip("/")}/audio/{message["message"]["mid"]}.mp3"

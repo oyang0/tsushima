@@ -72,7 +72,7 @@ def message_listing_with_backoff(client, thread_id):
 @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
 def generate_corrected_transcript(client, temperature, transcribe, audio_file, mid, app):
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-4o-mini",
         temperature=temperature,
         messages=[
             {

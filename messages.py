@@ -2,6 +2,7 @@ import os
 import requests
 import retries
 
+from contextlib import suppress
 from gtts import gTTS
 from openai import NotFoundError
 from pydub import AudioSegment
@@ -27,11 +28,40 @@ def transcribe(url, mid, app, client):
 
     return transcription
 
-def get_text(message, app, client):
+def get_conversion_assistant(level):
+    levels = {"A1": os.environ["A1_CONVERSION_ASSISTANT_ID"], "A2": os.environ["A2_CONVERSION_ASSISTANT_ID"],
+              "B1": os.environ["B1_CONVERSION_ASSISTANT_ID"], "B2": os.environ["B2_CONVERSION_ASSISTANT_ID"],
+              "C1": os.environ["C1_CONVERSION_ASSISTANT_ID"], "C2": os.environ["C2_CONVERSION_ASSISTANT_ID"]}
+    
+    if level in levels:
+        assistant = levels[level]
+    else:
+        raise Exception("conversion assistant not found")
+        
+    return assistant
+
+def convert_kanji(text, level, app, client):
+    thread = retries.thread_creation_with_backoff(client)
+    app.logger.debug(f"Thread created: {thread.id}")
+    retries.message_creation_with_backoff(client, thread.id, text)
+    app.logger.debug(f"Message created: {thread.id}")
+    conversion_assistant = get_conversion_assistant(level)
+    run = retries.creation_and_polling_with_backoff(client, thread.id, conversion_assistant)
+    app.logger.debug(f"Message polled: {thread.id}")
+    text = get_message(run, thread.id, app, client)
+
+    with suppress(NotFoundError):
+        retries.thread_deletion_with_backoff(client, thread.id)
+        app.logger.debug(f"Thread deleted: {thread.id}")
+
+    return text
+
+def get_text(message, level, app, client):
     if is_audio(message):
         audio_file, mid = message["attachments"][0]["payload"]["url"], message["mid"]
         text = retries.generate_corrected_transcript(client, 0, transcribe, audio_file, mid, app)
         app.logger.debug(f"Transcript corrected: {text}")
+        text = convert_kanji(text, level, app, client)
     elif "text" in message:
         text = message["text"]
     else:
@@ -92,15 +122,15 @@ def get_level(sender, cur):
     level = record[0] if record else set_level(sender, cur)
     return level
 
-def get_assistant(level):
-    levels = {"A1": os.environ["A1_ASSISTANT_ID"], "A2": os.environ["A2_ASSISTANT_ID"],
-              "B1": os.environ["B1_ASSISTANT_ID"], "B2": os.environ["B2_ASSISTANT_ID"],
-              "C1": os.environ["C1_ASSISTANT_ID"], "C2": os.environ["C2_ASSISTANT_ID"]}
+def get_chat_assistant(level):
+    levels = {"A1": os.environ["A1_CHAT_ASSISTANT_ID"], "A2": os.environ["A2_CHAT_ASSISTANT_ID"],
+              "B1": os.environ["B1_CHAT_ASSISTANT_ID"], "B2": os.environ["B2_CHAT_ASSISTANT_ID"],
+              "C1": os.environ["C1_CHAT_ASSISTANT_ID"], "C2": os.environ["C2_CHAT_ASSISTANT_ID"]}
     
     if level in levels:
         assistant = levels[level]
     else:
-        raise Exception("assistant not found")
+        raise Exception("chat assistant not found")
         
     return assistant
 
