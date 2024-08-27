@@ -62,6 +62,7 @@ def get_text(message, level, app, client):
         text = retries.generate_corrected_transcript(client, 0, transcribe, audio_file, mid, app)
         app.logger.debug(f"Transcript corrected: {text}")
         text = convert_kanji(text, level, app, client)
+        app.logger.debug(f"Transcript converted: {text}")
     elif "text" in message:
         text = message["text"]
     else:
