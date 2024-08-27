@@ -4,6 +4,8 @@ import psycopg2
 from openai import NotFoundError
 from tenacity import retry, stop_after_attempt, wait_random_exponential, retry_if_not_exception_type, RetryError
 
+system_prompt = "あなたは役立つアシスタントです。あなたの仕事は、書き起こされたテキストのスペルの不一致を修正することです。ピリオド、カンマ、大文字の使用など、必要な句読点のみを追加し、提供された文脈のみを使用してください。"
+
 @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
 def connection_with_backoff():
     conn = psycopg2.connect(os.environ["DATABASE_URL"])
@@ -68,7 +70,7 @@ def message_listing_with_backoff(client, thread_id):
     return messages
 
 @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
-def generate_corrected_transcript(client, temperature, system_prompt, transcribe, audio_file, mid, app):
+def generate_corrected_transcript(client, temperature, transcribe, audio_file, mid, app):
     response = client.chat.completions.create(
         model="gpt-4o",
         temperature=temperature,

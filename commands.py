@@ -1,20 +1,32 @@
 import os
+import requests
 import retries
 
 from contextlib import suppress
 from fbmessenger.elements import Text
 from openai import NotFoundError
 
+def set_commands():
+    url = f"https://graph.facebook.com/v20.0/me/messenger_profile?access_token={os.environ["FB_PAGE_TOKEN"]}"
+    json = {"commands": [{"locale": "default", "commands": [
+        {"level": "/ set cefr level [level]"},
+        {"speed": "/ set voice speed [speed]"},
+        {"delete": "/ delete conversation"},
+        {"report": "/ report technical problem [problem]"}]}]}
+    headers = {"Content-Type": "application/json"}
+    response = requests.post(url, json=json, headers=headers)
+    return response
+
 def is_command(message):
     return "text" in message and message["text"][0] in ("/", "@")
 
-def delete_conversation(message, cur, app, client):
+def delete_conversation(sender, cur, app, client):
     retries.execution_with_backoff(
         cur, f"""
         SELECT thread
         FROM {os.environ["SCHEMA"]}.threads
         WHERE sender = %s
-        """, (message["sender"]["id"],))
+        """, (sender,))
     record = cur.fetchone()
 
     if record:
@@ -26,27 +38,27 @@ def delete_conversation(message, cur, app, client):
             cur, f"""
             DELETE FROM {os.environ["SCHEMA"]}.threads
             WHERE sender = %s
-            """, (message["sender"]["id"],))
+            """, (sender,))
     
     responses = [Text(text="Conversation deleted").to_dict()]
 
     return responses
 
-def report_technical_problem(message, cur):
-    command = message["message"]["text"][1:].lower().lstrip()
+def report_technical_problem(command, sender, cur):
     technical_problem = command.lstrip("report technical problem").lstrip()
     retries.execution_with_backoff(
         cur, f"""
         INSERT INTO {os.environ["SCHEMA"]}.problems (sender, problem)
         VALUES (%s, %s)
-        """, (message["sender"]["id"], technical_problem))
+        """, (sender, technical_problem))
     responses = [Text(text="Technical problem reported").to_dict()]
     return responses
 
-def set_level(message, cur):
-    command = message["message"]["text"][1:].lower().lstrip()
+def set_cefr_level(command, sender, cur):
     level = command.lstrip("set level").lstrip()
-    levels = {"breakthrough": "a1", "waystage": "a2", "threshold": "b1", "vantage": "b2", "advanced": "c1", "mastery": "c2"}
+    levels = {"breakthrough": "a1", "waystage": "a2",
+              "threshold": "b1", "vantage": "b2",
+              "advanced": "c1", "mastery": "c2"}
     level = levels[level] if level in levels else level
 
     if level in ("a1", "a2", "b1", "b2", "c1", "c2"):
@@ -56,15 +68,14 @@ def set_level(message, cur):
             VALUES (%s, %s)
             ON CONFLICT (sender)
             DO UPDATE SET level = EXCLUDED.level;
-            """, (message["sender"]["id"], level.upper()))
-        responses = [Text(text=f"Set level to {level.upper()}").to_dict()]
+            """, (sender, level.upper()))
+        responses = [Text(text=f"CEFR level set to {level.upper()}").to_dict()]
     else:
         responses = [Text(text=f"Missing required argument: 'A1', 'A2', 'B1', 'B2', 'C1', or 'C2'").to_dict()]
     
     return responses
 
-def set_voice_speed(message, cur):
-    command = message["message"]["text"][1:].lower().lstrip()
+def set_voice_speed(command, sender, cur):
     voice_speed = command.lstrip("set voice speed").lstrip()
 
     if voice_speed in ("normal", "slow"):
@@ -74,7 +85,7 @@ def set_voice_speed(message, cur):
             VALUES (%s, %s)
             ON CONFLICT (sender)
             DO UPDATE SET slow = EXCLUDED.slow;
-            """, (message["sender"]["id"], voice_speed == "slow"))
+            """, (sender, voice_speed == "slow"))
         responses = [Text(text=f"Voice speed set to {voice_speed}").to_dict()]
     else:
         responses = [Text(text=f"Missing required argument: 'normal' or 'slow'").to_dict()]
@@ -86,13 +97,13 @@ def process_command(message, app, client):
     command = message["message"]["text"][1:].lower().lstrip()
 
     if command.startswith("delete conversation"):
-        responses = delete_conversation(message, cur, app, client)
+        responses = delete_conversation(message["sender"]["id"], cur, app, client)
     elif command.startswith("report technical problem"):
-        responses = report_technical_problem(message, cur)
-    elif command.startswith("set level"):
-        responses = set_level(message, cur)
+        responses = report_technical_problem(command, message["sender"]["id"], cur)
+    elif command.startswith("set cefr level"):
+        responses = set_cefr_level(command, message["sender"]["id"], cur)
     elif command.startswith("set voice speed"):
-        responses = set_voice_speed(message, cur)
+        responses = set_voice_speed(command, message["sender"]["id"], cur)
     else:
         responses = [Text(text=f"Command '{command}' is not defined").to_dict()]
 

@@ -27,10 +27,10 @@ def transcribe(url, mid, app, client):
 
     return transcription
 
-def get_text(message, app, client, system_prompt):
+def get_text(message, app, client):
     if is_audio(message):
         audio_file, mid = message["attachments"][0]["payload"]["url"], message["mid"]
-        text = retries.generate_corrected_transcript(client, 0, system_prompt, transcribe, audio_file, mid, app)
+        text = retries.generate_corrected_transcript(client, 0, transcribe, audio_file, mid, app)
         app.logger.debug(f"Transcript corrected: {text}")
     elif "text" in message:
         text = message["text"]

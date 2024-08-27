@@ -1,4 +1,5 @@
 import commands
+import exceptions
 import messages
 import os
 import retries
@@ -11,7 +12,7 @@ from openai import OpenAI
 
 def process_message(message):
     conn, cur = retries.get_connection_and_cursor_with_backoff()
-    text = messages.get_text(message["message"], app, client, system_prompt)
+    text = messages.get_text(message["message"], app, client)
     thread = messages.get_thread(message["sender"]["id"], cur, app, client)
     retries.message_creation_with_backoff(client, thread.id, text)
     level = messages.get_level(message["sender"]["id"], cur)
@@ -44,7 +45,7 @@ class Messenger(BaseMessenger):
                 else:
                     actions = process_message(message)
             except Exception as exception:
-                actions = [Text(text=f"{exception}").to_dict()]
+                actions = exceptions.process_exception(exception)
 
             for action in actions:
                 res = self.send(action, "RESPONSE")
@@ -55,13 +56,14 @@ class Messenger(BaseMessenger):
         
     def init_bot(self):
         self.add_whitelisted_domains("https://facebook.com/")
+        res = commands.set_commands()
+        app.logger.debug("Response: {}".format(res))
 
 app = Flask(__name__)
 app.debug = True
 messenger = Messenger(os.environ["FB_PAGE_TOKEN"])
 
 client = OpenAI()
-system_prompt = os.environ["SYSTEM_PROMPT"]
 
 @app.route("/webhook", methods=["GET", "POST"])
 def webhook():
