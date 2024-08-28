@@ -21,6 +21,7 @@ def process_message(message):
     run = retries.creation_and_polling_with_backoff(client, thread.id, chat_assistant)
     app.logger.debug(f"Message polled: {thread.id}")
     value = messages.get_message(run, thread.id, app, client)
+    value = messages.convert_kanji(value, level, app, client)
     messages.set_tts(value, message, cur)
     url = f"{os.environ.get("CALLBACK_URL").rstrip("/")}/audio/{message["message"]["mid"]}.mp3"
     audio = Audio(url=url, is_reusable=True)
