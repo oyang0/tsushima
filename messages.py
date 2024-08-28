@@ -121,7 +121,10 @@ def get_text(run, thread_id, client):
     if run.status == "completed": 
         messages = retries.message_listing_with_backoff(client, thread_id)
         text = messages.data[0].content[0].text.value
-        print(f"TEST: {messages.data[0]}")
+        if messages.data[0].parsed:
+            print("Message parsed")
+        elif messages.data[0].refusal:
+            print("Message refused")
     else:
         raise Exception(run.status)
     return text

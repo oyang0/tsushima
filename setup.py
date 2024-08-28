@@ -52,6 +52,11 @@ cur.execute("SELECT * FROM assistants")
 
 for row in cur.fetchall():
     if all([eval(row[6]) != assistant.metadata for assistant in client.beta.assistants.list()]):
+        if row[9] in ("auto", None):
+            response_format = row[9]
+        else:
+            response_format = eval(row[9].replace("true", "True").replace("false", "False"))
+
         client.beta.assistants.create(
 			model=row[1],
 			name=row[2],
@@ -61,7 +66,7 @@ for row in cur.fetchall():
 			metadata=eval(row[6]) if row[6] else None,
 			temperature=row[7],
 			top_p=row[8],
-			response_format=eval(row[9]) if row[9] not in ("auto", None) else row[9]
+			response_format=response_format
 		)
 
 cur.close()
