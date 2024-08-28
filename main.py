@@ -1,3 +1,4 @@
+import asyncio
 import commands
 import exceptions
 import messages
@@ -14,7 +15,7 @@ def process_message(message):
     conn, cur = retries.get_connection_and_cursor_with_backoff()
     level = messages.get_level(message["sender"]["id"], cur)
     text = messages.get_message(message["message"], level, client)
-    response = messages.get_response(message, message["sender"]["id"], level, cur, client)
+    response = messages.get_response(text, message["sender"]["id"], level, cur, client)
     messages.set_tts(response, message, cur)
     url = f"{os.environ.get("CALLBACK_URL").rstrip("/")}/audio/{message["message"]["mid"]}.mp3"
     audio = Audio(url=url, is_reusable=True)
@@ -28,7 +29,7 @@ class Messenger(BaseMessenger):
         self.page_access_token = page_access_token
         super(Messenger, self).__init__(self.page_access_token)
 
-    def message(self, message):
+    async def message(self, message):
         app.logger.debug(f"Message received: {message}")
         self.send_action("mark_seen")
 
@@ -50,7 +51,7 @@ class Messenger(BaseMessenger):
         
             self.send_action("typing_off")
         
-    def init_bot(self):
+    async def init_bot(self):
         self.add_whitelisted_domains("https://facebook.com/")
         res = commands.set_commands()
         app.logger.debug("Response: {}".format(res))
@@ -66,12 +67,12 @@ def webhook():
     if request.method == "GET":
         if request.args.get("hub.verify_token") == os.environ.get("FB_VERIFY_TOKEN"):
             if request.args.get("init") and request.args.get("init") == "true":
-                messenger.init_bot()
+                asyncio.run(messenger.init_bot())
                 return ""
             return request.args.get("hub.challenge")
         raise ValueError("FB_VERIFY_TOKEN does not match.")
     elif request.method == "POST":
-        messenger.handle(request.get_json(force=True))
+        asyncio.run(messenger.handle(request.get_json(force=True)))
     return ""
 
 @app.route("/audio/<path:filename>")

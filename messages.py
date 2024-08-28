@@ -112,25 +112,33 @@ def get_thread(sender, cur, client):
 
     return thread
 
-def get_assistant(level):
-    assistants = retries.assistant_listing_with_backoff()
+def get_assistant(level, client):
+    assistants = retries.assistant_listing_with_backoff(client)
     assistant = [assistant for assistant in assistants if assistant.metadata["level"] == level][0]
     return assistant
 
 def get_text(run, thread_id, client):
     if run.status == "completed": 
+        print("TEST #1")
         messages = retries.message_listing_with_backoff(client, thread_id)
+        print("TEST #2")
         text = messages.data[0].content[0].text.value
+        print("TEST #3")
     else:
         raise Exception(run.status)
     return text
 
 def get_response(message, sender, level, cur, client):
     thread = get_thread(sender, cur, client)
+    print("TESTING..")
     retries.message_creation_with_backoff(client, thread.id, message)
-    assitant = get_assistant(level)
+    print("TESTING...")
+    assitant = get_assistant(level, client)
+    print("TESTING....")
     run = retries.creation_and_polling_with_backoff(client, thread.id, assitant.id)
+    print("TESTING.....")
     response = get_text(run, thread.id, client)
+    print("TESTING......")
     return response
 
 def set_voice_speed(sender, cur):
