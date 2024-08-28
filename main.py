@@ -45,15 +45,15 @@ class Messenger(BaseMessenger):
                 actions = exceptions.process_exception(exception)
 
             for action in actions:
-                await res = self.send(action, "RESPONSE")
+                res = await asyncio.to_thread(self.send, action, "RESPONSE")
                 app.logger.debug(f"Message sent: {action}")
                 app.logger.debug(f"Response: {res}")
         
             self.send_action("typing_off")
         
-    async def init_bot(self):
+    def init_bot(self):
         self.add_whitelisted_domains("https://facebook.com/")
-        await res = commands.set_commands()
+        commands.set_commands()
         app.logger.debug("Response: {}".format(res))
 
 app = Flask(__name__)
@@ -67,7 +67,7 @@ def webhook():
     if request.method == "GET":
         if request.args.get("hub.verify_token") == os.environ.get("FB_VERIFY_TOKEN"):
             if request.args.get("init") and request.args.get("init") == "true":
-                asyncio.run(messenger.init_bot())
+                messenger.init_bot()
                 return ""
             return request.args.get("hub.challenge")
         raise ValueError("FB_VERIFY_TOKEN does not match.")
