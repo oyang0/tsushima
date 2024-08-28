@@ -13,19 +13,12 @@ from openai import OpenAI
 def process_message(message):
     conn, cur = retries.get_connection_and_cursor_with_backoff()
     level = messages.get_level(message["sender"]["id"], cur)
-    text = messages.get_text(message["message"], level, app, client)
-    thread = messages.get_thread(message["sender"]["id"], cur, app, client)
-    retries.message_creation_with_backoff(client, thread.id, text)
-    app.logger.debug(f"Message created: {thread.id}")
-    chat_assistant = messages.get_chat_assistant(level)
-    run = retries.creation_and_polling_with_backoff(client, thread.id, chat_assistant)
-    app.logger.debug(f"Message polled: {thread.id}")
-    value = messages.get_message(run, thread.id, app, client)
-    value = messages.convert_kanji(value, level, app, client)
-    messages.set_tts(value, message, cur)
+    text = messages.get_message(message["message"], level, client)
+    response = messages.get_response(message, message["sender"]["id"], level, cur, client)
+    messages.set_tts(response, message, cur)
     url = f"{os.environ.get("CALLBACK_URL").rstrip("/")}/audio/{message["message"]["mid"]}.mp3"
     audio = Audio(url=url, is_reusable=True)
-    text = Text(text=value)
+    text = Text(text=response)
     retries.commit_with_backoff(conn)
     retries.close_cursor_and_connection_with_backoff(cur, conn)
     return (audio.to_dict(), text.to_dict())
@@ -44,7 +37,7 @@ class Messenger(BaseMessenger):
 
             try:
                 if commands.is_command(message["message"]):
-                    actions = commands.process_command(message, app, client)
+                    actions = commands.process_command(message, client)
                 else:
                     actions = process_message(message)
             except Exception as exception:

@@ -1,7 +1,8 @@
 import os
 import psycopg2
+import sqlite3
 
-from main import messenger
+from main import client, messenger
 
 conn = psycopg2.connect(os.environ["DATABASE_URL"])
 cur = conn.cursor()
@@ -41,6 +42,28 @@ CREATE TABLE IF NOT EXISTS {os.environ["SCHEMA"]}.problems (
 """)
 
 conn.commit()
+cur.close()
+conn.close()
+
+conn = sqlite3.connect("openai.db")
+cur = conn.cursor()
+
+cur.execute("SELECT * FROM assistants")
+
+for row in cur.fetchall():
+    if all([eval(row[6]) != assistant.metadata for assistant in client.beta.assistants.list()]):
+        client.beta.assistants.create(
+			model=row[1],
+			name=row[2],
+			description=row[3],
+			instructions=row[4],
+			tools=eval(row[5]) if row[5] else None,
+			metadata=eval(row[6]) if row[6] else None,
+			temperature=row[7],
+			top_p=row[8],
+			response_format=eval(row[9]) if row[9] not in ("auto", None) else row[9]
+		)
+
 cur.close()
 conn.close()
 

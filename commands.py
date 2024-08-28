@@ -20,7 +20,7 @@ def set_commands():
 def is_command(message):
     return "text" in message and message["text"][0] in ("/", "@")
 
-def delete_conversation(sender, cur, app, client):
+def delete_conversation(sender, cur, client):
     retries.execution_with_backoff(
         cur, f"""
         SELECT thread
@@ -32,7 +32,6 @@ def delete_conversation(sender, cur, app, client):
     if record:
         with suppress(NotFoundError):
             retries.thread_deletion_with_backoff(client, record[0])
-            app.logger.debug(f"Thread deleted: {record[0]}")
         
         retries.execution_with_backoff(
             cur, f"""
@@ -40,26 +39,27 @@ def delete_conversation(sender, cur, app, client):
             WHERE sender = %s
             """, (sender,))
     
-    responses = [Text(text="Conversation deleted").to_dict()]
+    response = "Conversation deleted"
 
-    return responses
+    return response
 
 def report_technical_problem(command, sender, cur):
     technical_problem = command.lstrip("report technical problem").lstrip()
-    retries.execution_with_backoff(
-        cur, f"""
-        INSERT INTO {os.environ["SCHEMA"]}.problems (sender, problem)
-        VALUES (%s, %s)
-        """, (sender, technical_problem))
-    responses = [Text(text="Technical problem reported").to_dict()]
-    return responses
+
+    if technical_problem:
+        retries.execution_with_backoff(
+            cur, f"""
+            INSERT INTO {os.environ["SCHEMA"]}.problems (sender, problem)
+            VALUES (%s, %s)
+            """, (sender, technical_problem))
+        response = "Technical problem reported"
+    else:
+        response = "Missing required argument: [problem]"
+
+    return response
 
 def set_cefr_level(command, sender, cur):
-    level = command.lstrip("set level").lstrip()
-    levels = {"breakthrough": "a1", "waystage": "a2",
-              "threshold": "b1", "vantage": "b2",
-              "advanced": "c1", "mastery": "c2"}
-    level = levels[level] if level in levels else level
+    level = command.lstrip("set cefr level").lstrip()
 
     if level in ("a1", "a2", "b1", "b2", "c1", "c2"):
         retries.execution_with_backoff(
@@ -69,11 +69,11 @@ def set_cefr_level(command, sender, cur):
             ON CONFLICT (sender)
             DO UPDATE SET level = EXCLUDED.level;
             """, (sender, level.upper()))
-        responses = [Text(text=f"CEFR level set to {level.upper()}").to_dict()]
+        response = f"CEFR level set to {level.upper()}"
     else:
-        responses = [Text(text=f"Missing required argument: 'A1', 'A2', 'B1', 'B2', 'C1', or 'C2'").to_dict()]
+        response = "Missing required argument: 'A1', 'A2', 'B1', 'B2', 'C1', or 'C2'"
     
-    return responses
+    return response
 
 def set_voice_speed(command, sender, cur):
     voice_speed = command.lstrip("set voice speed").lstrip()
@@ -86,28 +86,29 @@ def set_voice_speed(command, sender, cur):
             ON CONFLICT (sender)
             DO UPDATE SET slow = EXCLUDED.slow;
             """, (sender, voice_speed == "slow"))
-        responses = [Text(text=f"Voice speed set to {voice_speed}").to_dict()]
+        response = f"Voice speed set to {voice_speed}"
     else:
-        responses = [Text(text=f"Missing required argument: 'normal' or 'slow'").to_dict()]
+        response = "Missing required argument: 'normal' or 'slow'"
     
-    return responses
+    return response
 
-def process_command(message, app, client):
+def process_command(message, client):
     conn, cur = retries.get_connection_and_cursor_with_backoff()
     command = message["message"]["text"][1:].lower().lstrip()
 
     if command.startswith("delete conversation"):
-        responses = delete_conversation(message["sender"]["id"], cur, app, client)
+        response = delete_conversation(message["sender"]["id"], cur, client)
     elif command.startswith("report technical problem"):
-        responses = report_technical_problem(command, message["sender"]["id"], cur)
+        response = report_technical_problem(command, message["sender"]["id"], cur)
     elif command.startswith("set cefr level"):
-        responses = set_cefr_level(command, message["sender"]["id"], cur)
+        response = set_cefr_level(command, message["sender"]["id"], cur)
     elif command.startswith("set voice speed"):
-        responses = set_voice_speed(command, message["sender"]["id"], cur)
+        response = set_voice_speed(command, message["sender"]["id"], cur)
     else:
-        responses = [Text(text=f"Command '{command}' is not defined").to_dict()]
+        response = f"Command '{command}' is not defined"
 
+    response = Text(text=response)
     retries.commit_with_backoff(conn)
     retries.close_cursor_and_connection_with_backoff(cur, conn)
 
-    return responses
+    return (response.to_dict(),)
