@@ -73,7 +73,7 @@ def webhook():
         raise ValueError("FB_VERIFY_TOKEN does not match.")
     elif request.method == "POST":
         asyncio.run(messenger.handle(request.get_json(force=True)))
-    return ""
+    return "ok", 200
 
 @app.route("/audio/<path:filename>")
 def serve_audio(filename):
