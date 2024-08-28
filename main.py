@@ -29,7 +29,7 @@ class Messenger(BaseMessenger):
         self.page_access_token = page_access_token
         super(Messenger, self).__init__(self.page_access_token)
 
-    async def message(self, message):
+    def message(self, message):
         app.logger.debug(f"Message received: {message}")
         self.send_action("mark_seen")
 
@@ -45,7 +45,7 @@ class Messenger(BaseMessenger):
                 actions = exceptions.process_exception(exception)
 
             for action in actions:
-                res = await asyncio.to_thread(self.send, action, "RESPONSE")
+                res = self.send(action, "RESPONSE")
                 app.logger.debug(f"Message sent: {action}")
                 app.logger.debug(f"Response: {res}")
         
@@ -62,6 +62,9 @@ messenger = Messenger(os.environ["FB_PAGE_TOKEN"])
 
 client = OpenAI()
 
+async def handle_message(payload):
+    await asyncio.to_thread(messenger.handle, payload)
+
 @app.route("/webhook", methods=["GET", "POST"])
 def webhook():
     if request.method == "GET":
@@ -72,7 +75,7 @@ def webhook():
             return request.args.get("hub.challenge")
         raise ValueError("FB_VERIFY_TOKEN does not match.")
     elif request.method == "POST":
-        asyncio.run(messenger.handle(request.get_json(force=True)))
+        asyncio.run(handle_message(request.get_json(force=True)))
     return ""
 
 @app.route("/audio/<path:filename>")
