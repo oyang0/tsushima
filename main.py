@@ -45,7 +45,7 @@ class Messenger(BaseMessenger):
                 actions = exceptions.process_exception(exception)
 
             for action in actions:
-                res = await self.send(action, "RESPONSE")
+                await res = self.send(action, "RESPONSE")
                 app.logger.debug(f"Message sent: {action}")
                 app.logger.debug(f"Response: {res}")
         
@@ -53,7 +53,7 @@ class Messenger(BaseMessenger):
         
     async def init_bot(self):
         self.add_whitelisted_domains("https://facebook.com/")
-        res = await commands.set_commands()
+        await res = commands.set_commands()
         app.logger.debug("Response: {}".format(res))
 
 app = Flask(__name__)
