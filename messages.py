@@ -14,7 +14,7 @@ def is_handled(mid, cur):
 def set_handled(mid, timestamp, cur):
     retries.execution_with_backoff(cur, f"""
         INSERT INTO {os.environ["SCHEMA"]}.messages (message, timestamp)
-        VALUES (%s)
+        VALUES (%s, %s)
         ON CONFLICT (message)
         DO UPDATE SET timestamp = EXCLUDED.timestamp
         """, (mid, timestamp))
@@ -28,7 +28,7 @@ def set_level(sender, cur):
         INSERT INTO {os.environ["SCHEMA"]}.levels (sender, level) 
         VALUES (%s, %s)
         ON CONFLICT (sender)
-        DO UPDATE SET level = EXCLUDED.level;
+        DO UPDATE SET level = EXCLUDED.level
         """, (sender, level))
     return level
 
@@ -98,7 +98,7 @@ def set_thread(sender, cur, client):
         INSERT INTO {os.environ["SCHEMA"]}.threads (sender, thread) 
         VALUES (%s, %s)
         ON CONFLICT (sender)
-        DO UPDATE SET thread = EXCLUDED.thread;
+        DO UPDATE SET thread = EXCLUDED.thread
         """, (sender, thread.id))
     return thread
 
