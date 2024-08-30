@@ -7,10 +7,24 @@ from gtts import gTTS
 from openai import NotFoundError
 from pydub import AudioSegment
 
+def is_handled(mid, cur):
+    retries.execution_with_backoff(cur, f"SELECT 1 FROM {os.environ["SCHEMA"]}.messages WHERE message = %s", (mid,))
+    return True if cur.fetchone() else False
+
+def set_handled(mid, timestamp, cur):
+    retries.execution_with_backoff(cur, f"""
+        INSERT INTO {os.environ["SCHEMA"]}.messages (message, timestamp)
+        VALUES (%s)
+        ON CONFLICT (message)
+        DO UPDATE SET timestamp = EXCLUDED.timestamp
+        """, (mid, timestamp))
+
+def is_audio(message):
+    return "attachments" in message and message["attachments"][0]["type"] == "audio"
+
 def set_level(sender, cur):
     level = "A1"
-    retries.execution_with_backoff(
-        cur, f"""
+    retries.execution_with_backoff(cur, f"""
         INSERT INTO {os.environ["SCHEMA"]}.levels (sender, level) 
         VALUES (%s, %s)
         ON CONFLICT (sender)
@@ -19,8 +33,7 @@ def set_level(sender, cur):
     return level
 
 def get_level(sender, cur):
-    retries.execution_with_backoff(
-        cur, f"""
+    retries.execution_with_backoff(cur, f"""
         SELECT level
         FROM {os.environ["SCHEMA"]}.levels
         WHERE sender = %s
@@ -28,9 +41,6 @@ def get_level(sender, cur):
     record = cur.fetchone()
     level = record[0] if record else set_level(sender, cur)
     return level
-
-def is_audio(message):
-    return "attachments" in message and message["attachments"][0]["type"] == "audio"
 
 def transcribe(url, mid, client):
     open(f"{mid}.mp4", "wb").write(requests.get(url).content)
@@ -84,8 +94,7 @@ def get_message(message, level, client):
 
 def set_thread(sender, cur, client):
     thread = retries.thread_creation_with_backoff(client)
-    retries.execution_with_backoff(
-        cur, f"""
+    retries.execution_with_backoff(cur, f"""
         INSERT INTO {os.environ["SCHEMA"]}.threads (sender, thread) 
         VALUES (%s, %s)
         ON CONFLICT (sender)
@@ -94,8 +103,7 @@ def set_thread(sender, cur, client):
     return thread
 
 def get_thread(sender, cur, client):
-    retries.execution_with_backoff(
-        cur, f"""
+    retries.execution_with_backoff(cur, f"""
         SELECT thread
         FROM {os.environ["SCHEMA"]}.threads
         WHERE sender = %s

@@ -27,9 +27,9 @@ https://www.facebook.com/profile.php?id=61564148264808
 
 ```sh
 psql -U postgres
-CREATE DATABASE tsushima;
-CREATE USER user WITH ENCRYPTED PASSWORD 'password';
-GRANT ALL PRIVILEGES ON DATABASE tsushima TO user;
+CREATE DATABASE tsushima
+CREATE USER user WITH ENCRYPTED PASSWORD 'password'
+GRANT ALL PRIVILEGES ON DATABASE tsushima TO user
 ```
 
 3. **Set Up Environment Variables:** Add the following environment variables:

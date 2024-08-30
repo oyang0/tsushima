@@ -20,7 +20,7 @@ def set_commands():
 def is_command(message):
     return "text" in message and message["text"][0] in ("/", "@")
 
-def delete_conversation(sender, cur, client):
+def delete_conversation(sender, client, cur):
     retries.execution_with_backoff(
         cur, f"""
         SELECT thread
@@ -86,18 +86,18 @@ def set_voice_speed(command, sender, cur):
             ON CONFLICT (sender)
             DO UPDATE SET slow = EXCLUDED.slow;
             """, (sender, voice_speed == "slow"))
+
         response = f"Voice speed set to {voice_speed}"
     else:
         response = "Missing required argument: 'normal' or 'slow'"
     
     return response
 
-def process_command(message, client):
-    conn, cur = retries.get_connection_and_cursor_with_backoff()
+def process_command(message, client, cur):
     command = message["message"]["text"][1:].lower().lstrip()
 
     if command.startswith("delete conversation"):
-        response = delete_conversation(message["sender"]["id"], cur, client)
+        response = delete_conversation(message["sender"]["id"], client, cur)
     elif command.startswith("report technical problem"):
         response = report_technical_problem(command, message["sender"]["id"], cur)
     elif command.startswith("set cefr level"):
@@ -108,7 +108,5 @@ def process_command(message, client):
         response = f"Command '{command}' is not defined"
 
     response = Text(text=response)
-    retries.commit_with_backoff(conn)
-    retries.close_cursor_and_connection_with_backoff(cur, conn)
 
     return (response.to_dict(),)

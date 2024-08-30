@@ -41,6 +41,14 @@ CREATE TABLE IF NOT EXISTS {os.environ["SCHEMA"]}.problems (
 )
 """)
 
+cur.execute(f"""
+CREATE TABLE IF NOT EXISTS {os.environ["SCHEMA"]}.messages (
+	id SERIAL PRIMARY KEY,
+	message TEXT NOT NULL UNIQUE,
+    timestamp BIGINT
+)
+""")
+
 conn.commit()
 cur.close()
 conn.close()
