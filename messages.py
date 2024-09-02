@@ -169,20 +169,25 @@ def get_voice_speed(sender, cur):
 
 def delete_markdown_syntax(text):
     text = re.sub(r"#+\s?", "", text)
-    text = re.sub(r'(\*\*|__)(.*?)\1', r'\2', text)
-    text = re.sub(r'(\*|_)(.*?)\1', r'\2', text)
-    text = re.sub(r'>\s?', '', text)
-    text = re.sub(r'\d+\.\s+', '', text)
-    text = re.sub(r'[-+*]\s+', '', text)
-    text = re.sub(r'`.*?`', '', text)
-    text = re.sub(r'---+', '', text)
-    text = re.sub(r'\[.*?\]\(.*?\)', '', text)
-    text = re.sub(r'!\[.*?\]\(.*?\)', '', text)
-    text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
-    text = re.sub(r'~~(.*?)~~', r'\1', text)
+    text = re.sub(r"(\*\*|__)(.*?)\1", r"\2", text)
+    text = re.sub(r"(\*|_)(.*?)\1", r"\2", text)
+    text = re.sub(r">\s?", "", text)
+    text = re.sub(r"\d+\.\s+", "", text)
+    text = re.sub(r"[-+*]\s+", "", text)
+    text = re.sub(r"`.*?`", "", text)
+    text = re.sub(r"---+", "", text)
+    text = re.sub(r"\[.*?\]\(.*?\)", "", text)
+    text = re.sub(r"!\[.*?\]\(.*?\)", "", text)
+    text = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
+    text = re.sub(r"~~(.*?)~~", r"\1", text)
+    return text
+
+def delete_bracket_text(text):
+    text = re.sub(r"\[.*?\]|\(.*?\)|\{.*?\}", "", text)
     return text
 
 def set_tts(text, message, cur):
     text = delete_markdown_syntax(text)
+    text = delete_bracket_text(text)
     tts = gTTS(text = text, lang = "ja", slow = get_voice_speed(message["sender"]["id"], cur))
     tts.save(f"{message["message"]["mid"]}.mp3")
