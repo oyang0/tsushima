@@ -31,7 +31,7 @@ class Messenger(BaseMessenger):
         self.send_action("mark_seen")
 
         if not messages.is_handled(message["message"]["mid"], cur):
-            if messages.is_audio(message["message"]) or "text" in message["message"]:
+            if messages.is_audio(message["message"]) or messages.is_text(message["message"]):
                 messages.set_handled(message["message"]["mid"], message["timestamp"], cur)
                 retries.commit_with_backoff(conn)
                 self.send_action("typing_on")
@@ -52,6 +52,8 @@ class Messenger(BaseMessenger):
                     app.logger.debug(f"Response: {res}")
 
                 self.send_action("typing_off")
+        
+        retries.close_cursor_and_connection_with_backoff(cur, conn)
         
     def init_bot(self):
         self.add_whitelisted_domains("https://facebook.com/")

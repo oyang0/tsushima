@@ -22,6 +22,9 @@ def set_handled(mid, timestamp, cur):
 def is_audio(message):
     return "attachments" in message and message["attachments"][0]["type"] == "audio"
 
+def is_text(message):
+    return "text" in message
+
 def set_level(sender, cur):
     level = "A1"
     retries.execution_with_backoff(cur, f"""
@@ -86,7 +89,7 @@ def get_message(message, level, client):
     if is_audio(message):
         transcription = get_transcription(message, client)
         message = convert_kanji(transcription, level, client)
-    elif "text" in message:
+    elif is_text(message):
         message = message["text"]
     else:
         raise Exception("message is neither audio nor text")

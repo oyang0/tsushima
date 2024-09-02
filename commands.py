@@ -67,7 +67,7 @@ def set_cefr_level(command, sender, cur):
             INSERT INTO {os.environ["SCHEMA"]}.levels (sender, level) 
             VALUES (%s, %s)
             ON CONFLICT (sender)
-            DO UPDATE SET level = EXCLUDED.level;
+            DO UPDATE SET level = EXCLUDED.level
             """, (sender, level.upper()))
         response = f"CEFR level set to {level.upper()}"
     else:
@@ -84,7 +84,7 @@ def set_voice_speed(command, sender, cur):
             INSERT INTO {os.environ["SCHEMA"]}.speeds (sender, slow)
             VALUES (%s, %s)
             ON CONFLICT (sender)
-            DO UPDATE SET slow = EXCLUDED.slow;
+            DO UPDATE SET slow = EXCLUDED.slow
             """, (sender, voice_speed == "slow"))
 
         response = f"Voice speed set to {voice_speed}"
