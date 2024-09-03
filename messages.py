@@ -144,7 +144,8 @@ def get_response(message, sender, level, cur, app, client):
     retries.message_creation_with_backoff(client, thread.id, message)
     assitant = get_assistant(level, client)
     run = retries.creation_and_polling_with_backoff(client, thread.id, assitant.id)
-    response = get_text(run, thread.id, app, client)
+    text = get_text(run, thread.id, app, client)
+    response = convert_kanji(text, level, client)
     return response
 
 def set_voice_speed(sender, cur):
