@@ -13,7 +13,7 @@ from openai import OpenAI
 def process_message(message, cur):
     level = messages.get_level(message["sender"]["id"], cur)
     text = messages.get_message(message["message"], level, client)
-    response = messages.get_response(text, message["sender"]["id"], level, cur, client)
+    response = messages.get_response(text, message["sender"]["id"], level, cur, app, client)
     messages.set_tts(response, message, cur)
     url = f"{os.environ.get("CALLBACK_URL").rstrip("/")}/audio/{message["message"]["mid"]}.mp3"
     audio = Audio(url=url, is_reusable=True)

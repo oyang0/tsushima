@@ -73,9 +73,9 @@ def message_listing_with_backoff(client, thread_id):
     return messages
 
 @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6), reraise=True)
-def completion_creation_with_backoff(client, temperature, system_prompt, content):
+def completion_creation_with_backoff(client, temperature, system_prompt, user_prompt):
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4o-2024-08-06",
         temperature=temperature,
         messages=[
             {
@@ -84,7 +84,7 @@ def completion_creation_with_backoff(client, temperature, system_prompt, content
             },
             {
                 "role": "user",
-                "content": content
+                "content": user_prompt
             }
         ]
     )

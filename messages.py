@@ -129,20 +129,22 @@ def get_assistant(level, client):
     assistant = [assistant for assistant in assistants if assistant.metadata["level"] == level][0]
     return assistant
 
-def get_text(run, thread_id, client):
+def get_text(run, thread_id, app, client):
     if run.status == "completed": 
         messages = retries.message_listing_with_backoff(client, thread_id)
-        text = eval(messages.data[0].content[0].text.value)["final_response"]
+        value = eval(messages.data[0].content[0].text.value)
+        app.logger.debug(f"Thoughts created: {value["thoughts"]}")
+        text = value["response"]
     else:
         raise Exception(run.status)
     return text
 
-def get_response(message, sender, level, cur, client):
+def get_response(message, sender, level, cur, app, client):
     thread = get_thread(sender, cur, client)
     retries.message_creation_with_backoff(client, thread.id, message)
     assitant = get_assistant(level, client)
     run = retries.creation_and_polling_with_backoff(client, thread.id, assitant.id)
-    response = get_text(run, thread.id, client)
+    response = get_text(run, thread.id, app, client)
     return response
 
 def set_voice_speed(sender, cur):
@@ -168,26 +170,17 @@ def get_voice_speed(sender, cur):
     return slow
 
 def delete_markdown_syntax(text):
-    text = re.sub(r"#+\s?", "", text)
-    text = re.sub(r"(\*\*|__)(.*?)\1", r"\2", text)
-    text = re.sub(r"(\*|_)(.*?)\1", r"\2", text)
-    text = re.sub(r">\s?", "", text)
-    text = re.sub(r"\d+\.\s+", "", text)
-    text = re.sub(r"[-+*]\s+", "", text)
-    text = re.sub(r"`.*?`", "", text)
-    text = re.sub(r"---+", "", text)
-    text = re.sub(r"\[.*?\]\(.*?\)", "", text)
-    text = re.sub(r"!\[.*?\]\(.*?\)", "", text)
-    text = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
-    text = re.sub(r"~~(.*?)~~", r"\1", text)
-    return text
-
-def delete_bracket_text(text):
-    text = re.sub(r"\[.*?\]|\(.*?\)|\{.*?\}", "", text)
+    text = re.sub(r"#\s*", "", text) # headings
+    text = re.sub(r"\*\s*", "", text) # bolds and italics
+    text = re.sub(r">\s*", "", text) # blockquotes
+    text = re.sub(r"\d+\.\s*", "", text) # ordered lists
+    text = re.sub(r"-\s*", "", text) # unordered lists and horizontal rules
+    text = re.sub(r"`\s*`", "", text) # codes
+    text = re.sub(r"!?\[.*?\]\(.*?\)", "", text) # links and images
+    text = re.sub(r"\[.*?\]|\(.*?\)|\{.*?\}", "", text) # bracketed text
     return text
 
 def set_tts(text, message, cur):
     text = delete_markdown_syntax(text)
-    text = delete_bracket_text(text)
     tts = gTTS(text = text, lang = "ja", slow = get_voice_speed(message["sender"]["id"], cur))
     tts.save(f"{message["message"]["mid"]}.mp3")
