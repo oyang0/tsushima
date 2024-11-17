@@ -179,6 +179,7 @@ def delete_markdown_syntax(text):
     text = re.sub(r"`\s*`", "", text) # codes
     text = re.sub(r"!?\[.*?\]\(.*?\)", "", text) # links and images
     text = re.sub(r"\[.*?\]|\(.*?\)|\{.*?\}", "", text) # bracketed text
+    text = re.sub(r"\〔.*?\〕|\（.*?\）|\｛.*?\｝", "", text) # bracketed text
     return text
 
 def set_tts(text, message, cur):
